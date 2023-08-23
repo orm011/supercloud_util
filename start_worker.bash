@@ -1,15 +1,19 @@
 #! /bin/bash
-
 set -x # print to output 
-
 echo $-
-TMPNAME=/state/partition1/user/$USER/raytmp/
 
+ENVSETUP=$1
+NAME=$2
+HEAD=$3
+
+# touching the sigfile will cause a restart of all ray nodes.
+# this is useful for updating the env, or restarting the head node.
+export SIGFILE=$HOME/$NAME.head
+
+export TMPNAME=/state/partition1/user/$USER/raytmp/
 ## different nodes have differnt amounts available.
-## leave some
 SHM_AVAILABLE_KB=`df /dev/shm | grep -v Available | awk '{print $4}'`
-OBJ_MEM_BYTES=$(( SHM_AVAILABLE_KB*1024 - 1024*1024*1024  )) # leave 1GB off
-export RAY_DISABLE_PYARROW_VERSION_CHECK=1
+export OBJ_MEM_BYTES=$(( SHM_AVAILABLE_KB*1024 - 1024*1024*1024  )) # leave 1GB off
 
 if [ -z "$SLURM_CPUS_ON_NODE" ]; 
 then
@@ -17,64 +21,54 @@ then
     exit 1
 fi
 
-# note large number, like 2x cpus, can cause limit errors nowadays. keep it 1x
-COMMON_ARGS="--temp-dir=$TMPNAME  --object-store-memory=$OBJ_MEM_BYTES"
 
+PREV=
+ITER=0
+while true
+do
+    CURRENT=`stat -c '%y' $SIGFILE`
+    if [[ $PREV != $CURRENT ]]
+    then
+        echo "$SIGFILE changed... stopping ray"
+        ray stop
 
-SIGFILE=$HOME/ray2.head
+        echo "sourcing $ENVSETUP"
+        source $ENVSETUP
+        echo "done sourcing $ENVSETUP"
 
-if [[ $1 == "--head" ]]
-then
-    echo 'starting head node'
-    ray start $COMMON_ARGS --num-cpus=$((SLURM_CPUS_ON_NODE/2)) --head
-    echo $HOSTNAME > $SIGFILE # signal change after done starting
-else 
-    echo 'starting worker node'
-    source ~/.bashrc
+        echo `which python`
+        echo `which ray`
+        echo `ray --version`
+        PREV=$CURRENT
 
-    PREV=
+        COMMON_ARGS="--temp-dir=$TMPNAME  --object-store-memory=$OBJ_MEM_BYTES"
 
-    while true
-    do
-        CURRENT=`stat -c '%y' $SIGFILE`
-        HEAD_NODE=`cat $SIGFILE`
-
-        if [[ $PREV != $CURRENT ]]
+        if [[ $HEAD == "--head" ]]
         then
-            echo 'file changed... restarting node'
+            echo 'starting head node'            
+            ray start $COMMON_ARGS --num-cpus=$((SLURM_CPUS_ON_NODE/2)) --head
+            echo $HOSTNAME > $SIGFILE # restart workers to connect to this new head
+            CURRENT=`stat -c '%y' $SIGFILE` # match current and prev to not cause an infinite loop in the head node
             PREV=$CURRENT
-            
-            if [[ $USER == omoll && $HEAD_NODE != '' ]]; # im using virtual env rather than default evnv.
-            then
-                sync_conda_to_local ## update conda env
+        else 
+            HEAD=`cat $SIGFILE`
 
-                ### re-run bash rc so env is activated, and also update any ray env vars
-                set +x
-                source ~/.bashrc
-                set -x
-
-                [ `which mamba` ] && echo 'conda was setup correctly' || echo 'problem setting up conda'
-                mamba activate seesaw
-
-            fi
-
-            echo `which python`
-            echo `which ray`
-            echo `ray --version`
-            ray stop
-
-            if [[$HEAD_NODE == '-1']] # message to exit
+            if [[ $HEAD == '-1' ]] # message to exit, ending the allocated job.
             then 
+                echo 'exiting loop'
                 break
             fi
 
-            if [[ $HEAD_NODE != '' ]]
+            if [[ $HEAD != '' ]]
             then
-                ray start $COMMON_ARGS --num-cpus=$((SLURM_CPUS_ON_NODE - 2)) --address=$HEAD_NODE:6379
+                ray start $COMMON_ARGS --num-cpus=$((SLURM_CPUS_ON_NODE - 2)) --address=$HEAD:6379
+                python -c 'import ray; ray.init("auto"); print(ray.available_resources());'
             fi
-        else
-            echo 'no change'
         fi
+    else
+        echo "$SIGFILE unchanged... sleeping"
         sleep 5
-    done    
-fi
+    fi
+
+    ITER=$((ITER+1))
+done
