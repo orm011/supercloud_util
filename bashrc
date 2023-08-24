@@ -1,4 +1,5 @@
-source ~/supercloud_utils/sync_tools.bash
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source $DIR/sync_tools.bash
 
 export TMPDIR=/state/partition1/user/$USER/tmpdir/
 mkdir -p $TMPDIR
@@ -31,6 +32,8 @@ fi
 
 export PYTHONNOUSERSITE=1 # dont add .local to python path, use conda pip
 export RAY_DISABLE_PYARROW_VERSION_CHECK=1
+export MODIN_ENGINE=ray
+
 
 #### if this is an interactive shell, even if not a login shell, set history, prompt, and sync the conda env
 if [[ $- == *i* ]]; then
@@ -49,9 +52,9 @@ if [[ $- == *i* ]]; then
     source ~/liquidprompt/liquidprompt
 
     if [[ `hostname` != login* ]]; then
-	if [ -z "${TMUX}" ]; then
-	    sync_conda_global_to_worker
-	fi
+        if [ -z "${TMUX}" ]; then
+            sync_conda_global_to_worker
+        fi
     fi
 
 fi

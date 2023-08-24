@@ -1,63 +1,73 @@
 PATH=$HOME/fpart_install/bin:$PATH
+MAMBA_GLOBAL=/home/gridsan/omoll/mambaforge_backup/
+MAMBA_LOCAL=/state/partition1/user/omoll/mambaforge/
 
-function sync_conda_global_to_worker {
+function sync_conda_global_to_worker() {
+    ENV=$1
+
     ## avoid expensive rsync filesystem checks in the common case, by using the license file as a signal.
-    #LOCAL_TIME=`stat -c '%y' /state/partition1/user/omoll/miniconda3/LICENSE.txt`
-    #GLOBAL_TIME=`stat -c '%y' /home/gridsan/omoll/miniconda3_backup/LICENSE.txt`
-
-    LOCAL_TIME=`stat -c '%y' /state/partition1/user/omoll/mambaforge/LICENSE.txt`
-    GLOBAL_TIME=`stat -c '%y' /home/gridsan/omoll/mambaforge_backup/LICENSE.txt`
+    LOCAL_TIME=`stat -c '%y' $MAMBA_LOCAL/LICENSE.txt`
+    GLOBAL_TIME=`stat -c '%y' $MAMBA_GLOBAL/LICENSE.txt`
  
+    # check we are running in host with name of form d-*, otherwise error out
+    if [[ `hostname` != d-* ]]; then 
+    	echo 'must run in work node, not login'    
+        return 1
+    fi
+        
+    # check if env exists
+    if [[ ! -d $MAMBA_GLOBAL/envs/$ENV ]]; then
+    	echo 'env '$ENV' does not exist in global'
+        return 1
+    fi
+
     if [[ $LOCAL_TIME != $GLOBAL_TIME ]]; then
-	echo 'syncing conda env from gridsan to local'
-	#fpsync -n 180 -o '-rlugpt --quiet --delete --exclude="/pkgs/**" --exclude="__pycache__/**" --exclude=".h" --exclude=".hpp" ' /home/gridsan/omoll/miniconda3_backup/  /state/partition1/user/omoll/miniconda3
-	fpsync -n 180 -o '-rlugpt --quiet --delete --exclude="/pkgs/**" --exclude="__pycache__/**" --exclude=".h" --exclude=".hpp" ' /home/gridsan/omoll/mambaforge_backup/  /state/partition1/user/omoll/mambaforge/
-	
-	#fpsync -n 180 -o '-rlugpt --quiet --delete --exclude="/pkgs/**" --exclude="__pycache__/**" --exclude=".h" --exclude=".hpp" ' /home/gridsan/omoll/huggingface_cache/  /state/partition1/user/omoll/huggingface_cache	
+    	echo "syncing mamba $ENV from global to local"
+        # rsync $OPTIONS $MAMBA_GLOBAL $MAMBA_LOCAL
+        mkdir -p $MAMBA_LOCAL
+        mkdir -p $MAMBA_LOCAL/envs/$ENV
 
-	EXIT=$?
-	[ $EXIT -eq 0 ] && echo 'done syncing conda env' || echo 'Warning: problem syncing conda'
+    	# rsync -av --filter="- /pkgs/**" --filter="- /include/**" --filter="- __pycache__" --filter="- /envs/**" $MAMBA_GLOBAL $MAMBA_LOCAL
+        fpsync -n 80 -v -o '-a --exclude="/pkgs/**" --exclude="/include/**" --exclude="__pycache__" --exclude="/envs/**"' $MAMBA_GLOBAL $MAMBA_LOCAL
+        fpsync -n 80 -v -o '-a --exclude="/include/**" --exclude="/*/include/**"' $MAMBA_GLOBAL/envs/$ENV/ $MAMBA_LOCAL/envs/$ENV/
+
+    	EXIT=$?
+	    [ $EXIT -eq 0 ] && echo 'done syncing conda env' || echo 'Warning: problem syncing conda'
     else
-	echo 'LICENSE.txt up to date, skipping fpsync. Touch LICENSE.txt to force update'
-	EXIT=0
+    	echo 'LICENSE.txt up to date, skipping fpsync. Touch LICENSE.txt to force update'
+	    EXIT=0
     fi
+    
     return $EXIT
 }
 
-function restore_conda_global_to_login {
-    if [[ `hostname` != login-4 ]]; then # only do from login-4, otherwise could erase
-	echo 'run in login-*'
-	return 1
+function sync_conda_login_to_global() {
+    echo 'backing up login env to global'
+    if [[ `hostname` != login-4 ]]; then # only do from login-4, otherwise --delete flag would erase
+    	echo 'must run in login-4'
+	    return 1
     fi
 
-    fpsync -n 180 -o '-rlugpt --quiet --exclude="__pycache__/**"' /home/gridsan/omoll/mambaforge_backup/  /state/partition1/user/omoll/mambaforge/
-#    fpsync -n 180 -o '-rlugpt --delete  --exclude="__pycache__/**"' /home/gridsan/omoll/huggingface_cache/ /state/partition1/user/omoll/huggingface_cache/    
+    mamba clean -a # clean up old pkgs to avoid long copies
+
+    fpsync -n 180 -v -o '-av --delete --exclude="__pycache__/**"' $MAMBA_LOCAL $MAMBA_GLOBAL
+    return $EXIT
 }
 
-function sync_conda_login_to_global {
-    echo 'backing up conda env to global'
+function restore_conda_global_to_login() {
+    # only used when login-4 is cleared
     if [[ `hostname` != login-4 ]]; then # only do from login-4, otherwise could erase
-	echo 'must run in correct login-* host.'
-	return 1
+    	echo 'run in login-4'
+	    return 1
     fi
 
-    ## skip pycache, but do copy /pkgs etc 
-    # fpsync -n 180 -o '-rlugpt --quiet --delete  --exclude="__pycache__/**"' /state/partition1/user/omoll/miniconda3/ /home/gridsan/omoll/miniconda3_backup/
-    fpsync -n 180 -o '-rlugpt --delete  --exclude="__pycache__/**"' /state/partition1/user/omoll/mambaforge/ /home/gridsan/omoll/mambaforge_backup/ && touch /home/gridsan/omoll/mambaforge_backup/LICENSE.txt
-#    fpsync -n 180 -o '-rlugpt --delete "' /state/partition1/user/omoll/huggingface_cache/ /home/gridsan/omoll/huggingface_cache/ && touch GLOBAL_HF_BASE/message.txt
-    
+    fpsync -n 180 -v -o '-av --exclude="__pycache__/**"' $MAMBA_GLOBAL $MAMBA_LOCAL
+}
 
-    EXIT=$?
-    
-    if [ $EXIT -eq 0 ]; then
-	# will trigger eventual sync in other nodes
-#	touch /home/gridsan/omoll/miniconda3_backup/LICENSE.txt
-
-
-	echo 'done backing up conda env'
-    else
-	echo 'Warning: problem syncing conda'
-    fi
-
-    return $EXIT
+function setup_worker_mamba() {
+    ENV=$1
+    sync_conda_global_to_worker $ENV
+    . $MAMBA_LOCAL/etc/profile.d/conda.sh
+    . $MAMBA_LOCAL/etc/profile.d/mamba.sh
+    mamba activate $ENV
 }
