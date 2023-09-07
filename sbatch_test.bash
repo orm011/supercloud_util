@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #SBATCH --partition=xeon-g6-volta
 #SBATCH --nodes=2
 #SBATCH --ntasks-per-node=1
@@ -10,5 +9,4 @@
 #SBATCH --job-name sbatchtest
 #SBATCH -o %x_%j.log
 
-echo 'log'
-srun --output=%x_%j_%t.log --cpu-bind=cores --accel-bind=gv  bash /home/gridsan/omoll/supercloud_util/test.bash
+srun --output=%x_%j_%t.log --cpus-per-task=40 --cpu-bind=cores --accel-bind=gv  bash /home/gridsan/omoll/supercloud_util/test.bash
