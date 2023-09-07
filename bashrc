@@ -15,19 +15,19 @@ PATH=/state/partition1/user/omoll/local/bin:$HOME/local/bin/:$PATH
 PATH=$HOME/goroot/bin/:$HOME/go/bin/:$HOME/local/nginx/sbin/:/home/gridsan/omoll/askem_shared/local/bin:$PATH
 PATH=/home/gridsan/groups/fastai/seesaw/node-v16.13.2-linux-x64/bin:$PATH
 
-LOCAL_HF_BASE=/state/partition1/user/omoll/huggingface_cache/
-GLOBAL_HF_BASE=$HOME/fastai_shared/omoll/huggingface_cache/
+LOCAL_HOME=/state/partition1/user/$USER/
+
+LOCAL_HF_BASE=$LOCAL_HOME/huggingface_cache/
+GLOBAL_HF_BASE=$HOME/huggingface_cache/
 
 if [[ `hostname` = login*  ]];then
     export TRANSFORMERS_OFFLINE=0
     export HF_DATASETS_OFFLINE=0
     export HF_HOME=$LOCAL_HF_BASE
-    #export HF_HOME=$GLOBAL_HF_BASE
 else
-#    rsync -rlugv $RSYNCQ $LOGIN4:$LOCAL_HF_BASE/ $LOCAL_HF_BASE
     export TRANSFORMERS_OFFLINE=1
     export HF_DATASETS_OFFLINE=1
-    export HF_HOME=$LOCAL_HF_BASE
+    export HF_HOME=$GLOBAL_HF_BASE
 fi
 
 export PYTHONNOUSERSITE=1 # dont add .local to python path, use conda pip
