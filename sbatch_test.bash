@@ -2,12 +2,13 @@
 
 #SBATCH --partition=xeon-g6-volta
 #SBATCH --nodes=2
-#SBATCH --ntasks=2
-#SBATCH --mem=0
-#SBATCH --gres=gpu:volta:2
+#SBATCH --ntasks-per-node=1
 #SBATCH --exclusive
+#SBATCH --mem=0
+#SBATCH --cpus-per-task=40
+#SBATCH --gres=gpu:volta:2
 #SBATCH --job-name sbatchtest
-#SBATCH -o %x_%j_%t.log
+#SBATCH -o %x_%j.log
 
-set -x 
-srun bash /home/gridsan/omoll/supercloud_util/test.bash
+echo 'log'
+srun --output=%x_%j_%t.log --cpu-bind=cores --accel-bind=gv  bash /home/gridsan/omoll/supercloud_util/test.bash

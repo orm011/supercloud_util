@@ -1,5 +1,6 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-source $DIR/sync_tools.bash
+
+source $HOME/supercloud_util/sync_tools.bash
 
 export TMPDIR=/state/partition1/user/$USER/tmpdir/
 mkdir -p $TMPDIR

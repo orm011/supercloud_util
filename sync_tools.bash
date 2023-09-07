@@ -6,7 +6,10 @@
 ## quite slow for directories with many files on the global filesystem, so even if there are no updates
 ## to make, rsync takes a long time to check.
 
+## some complications: when run through scheduler, there can be races between jobs trying to sync the same env.
+## one solution is using a task specific tmpdir, but then I need to set the paths accordingly
 function sync_tar_to_dir() {
+    set -x 
     TAR=$1
     DIR=$2
 
@@ -21,7 +24,8 @@ function sync_tar_to_dir() {
     fi
 
     TEMP=`mktemp -d`
-    GLOBAL_TIME=`stat -c '%y' $TAR`
+    GLOBAL_TIME=`stat -c '%y' $TAR`    
+    mkdir -p $DIR
 
     if [ -e  $DIR/.sync.time ]; then
         LOCAL_TIME=`stat -c '%y' $DIR/.sync.time`
@@ -36,10 +40,11 @@ function sync_tar_to_dir() {
     fi
 
     echo 'syncing '$TAR 'to' $DIR
-    tar -xf $TAR -C $TEMP && \
-        rm -rf $DIR && \
-        mv $TEMP $DIR && \
-        touch $DIR/.sync.time
+    tar -xf $TAR -C $TEMP 
+    rm -rf $DIR
+    mv -v -T $TEMP $DIR
+    
+    touch $DIR/.sync.time
     if [ $? -eq 0 ]; then
         echo 'done syncing '$TAR 'to' $DIR
         return 0
@@ -50,9 +55,11 @@ function sync_tar_to_dir() {
 }
 
 
-MAMBA_GLOBAL=/home/gridsan/omoll/mambaforge_tars/
-MAMBA_LOCAL=/state/partition1/user/$USER/mambaforge/
+export MAMBA_GLOBAL=/home/gridsan/omoll/mambaforge_tars
 
+# sort of hardcoded within mamba / conda itself.
+# problem: multiple writers bc of multiple jobs
+export MAMBA_LOCAL=/state/partition1/user/$USER/mambaforge
 
 function sync_conda_global_to_worker() {
     ENV=$1
@@ -62,6 +69,10 @@ function sync_conda_global_to_worker() {
     	echo 'must run in work node, not login'    
         return 1
     fi
+
+    mkdir -p $MAMBA_LOCAL/
+    lockfile $MAMBA_LOCAL/sync.lock
+    trap 'rm -f $MAMBA_LOCAL/sync.lock' EXIT
 
     sync_tar_to_dir $MAMBA_GLOBAL/base.tar $MAMBA_LOCAL || return 1
 
@@ -113,10 +124,13 @@ function sync_conda_login_to_global() {
     fi
 }
 
-
 function setup_worker_mamba() {
     ENV=$1
     sync_conda_global_to_worker $ENV
+    if [ ! $? -eq 0 ]; then
+        echo 'warning: problem syncing'
+        return 1
+    fi
     . $MAMBA_LOCAL/etc/profile.d/conda.sh
     . $MAMBA_LOCAL/etc/profile.d/mamba.sh
 }
