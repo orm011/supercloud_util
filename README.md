@@ -57,8 +57,10 @@ A working open flamingo env tarball is available at askem_shared
 On a login node:
 
 ```cp ~/askem_shared/envs/open_flamingo.tar $MAMBA_GLOBAL/envs/```
+
 then run
-```sync_conda_login_to_local```
+
+```sync_conda_global_to_login```
 
 now you should be able to run
 ```mamba activate open_flamingo```
@@ -87,6 +89,7 @@ You can test this similar to the base with with extra argument:
 You can install new packages on login nodes 
 `mamba activate <env>`
 `mamba install <my pkg>`
+
 but to see those upgrades in other nodes you need to 
 `sync_conda_login_to_global`
 
