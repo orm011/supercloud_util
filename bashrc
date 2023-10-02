@@ -4,8 +4,6 @@ source $UTILREPO/conda_env_tools.bash
 export TMPDIR=/state/partition1/user/$USER/tmpdir/
 mkdir -p $TMPDIR
 
-export LOGIN4=172.31.130.22
-
 export TMUX_TMPDIR=/state/partition1/user/omoll/tmux_tmpdir
 mkdir -p $TMUX_TMPDIR/tmux-`id -u`/ ## seems like tmux needs this folder to exist
 alias tmux='tmux -u'

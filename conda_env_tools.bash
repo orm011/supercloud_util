@@ -92,7 +92,7 @@ function sync_conda_global_to_login() {
 
     sync_tar_to_dir $MAMBA_GLOBAL/base.tar $MAMBA_LOCAL || return 1
 
-    ENVS=`ls mambaforge_tars/envs/*tar | xargs -I {} basename {} | sed 's/.tar//g'`
+    ENVS=`ls $MAMBA_GLOBAL/envs/*tar | xargs -I {} basename {} | sed 's/.tar//g'`
     echo restoring $ENVS
     for env in $ENVS; do
         echo 'restoring env '$env
