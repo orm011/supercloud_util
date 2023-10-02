@@ -113,8 +113,10 @@ function setup_worker_mamba() {
 }
 
 
-if [[ $- == *i* ]]; then # interactive shells (not scripts)
-    if [[ `hostname` != login* ]]; then # worker node, set up base mamba
-        setup_worker_mamba
+function maybe_setup_mamba_base() {
+    if [[ $- == *i* ]]; then # interactive shells (not scripts)
+        if [[ `hostname` != login* ]]; then # worker node, set up base mamba
+            sync_conda_global_to_worker
+        fi
     fi
-fi
+}

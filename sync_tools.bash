@@ -4,7 +4,6 @@
 ## therefore: tar into single large file from local into global, untar into small files from global into local
 ## this works much better than parallel rsyncs, which takes forever to start bc the analysis phase is
 ## quite slow for directories with many files on the global filesystem
-
 function sync_tar_to_dir() {
     TAR=$1
     DIR=$2

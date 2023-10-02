@@ -52,3 +52,4 @@ if [[ $- == *i* ]]; then
     source ~/liquidprompt/liquidprompt
 fi
 
+maybe_setup_mamba_base
