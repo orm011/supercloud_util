@@ -7,6 +7,7 @@ source $HOME/supercloud_util/conda_env_tools.bash
 ```
 
 Exit the shell, and login again to the same login node,
+(login-4 is 172.31.130.22 for now)
 *Test*:  `$MAMBA_LOCAL` is defined now
 
 # setup mamba base env.
