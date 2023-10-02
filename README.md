@@ -52,21 +52,31 @@ then upon loggin in to worker node:
 
 SUCCESS should be printed, as before.
 
-# Setting up project env for open_flamingo:
-A working open flamingo env tarball is available at askem_shared
+# Example: setting up a mamba env for open_flamingo 
+
 On a login node:
 
-```cp ~/askem_shared/envs/open_flamingo.tar $MAMBA_GLOBAL/envs/```
-
-then run
-
-```sync_conda_global_to_login```
-
+```
+mkdir repos; cd repos; git clone https://github.com/orm011/open_flamingo.git
+cd open_flamingo
+mamba create -n open_flamingo
+mamba env update -n open_flamingo -f ./environment.yml  # will install deps
+```
 now you should be able to run
-```mamba activate open_flamingo```
-on the login node.
+```
+cd ~
+mamba activate open_flamingo
+python -c 'import open_flamingo' 
+```
 
-* test: 
+This was all installed on ephemeral `/state/partition1/`
+Now run 
+```
+sync_conda_login_to_global
+```
+This will make this env. available in other nodes.
+
+* *test*:
 ```LLsub  ~/supercloud_util/test.bash -s 1 -q xeon-p8 -- open_flamingo```
 should produce success. If this doesnt work, lets chat.
 
