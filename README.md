@@ -1,14 +1,15 @@
 # setup supercloud util
 
-clone this repo into your homedir (form a login node), and add this line to your .bashrc:
+clone this repo into your homedir (form a login node) run the follwing
 
 ```
-source $HOME/supercloud_util/conda_env_tools.bash
+echo 'source $HOME/supercloud_util/conda_env_tools.bash' >> .bashrc
 ```
+To add this to your bashrc
 
 Exit the shell, and login again to the same login node,
 (login-4 is 172.22.254.14 for now)
-*Test*:  `$MAMBA_LOCAL` is defined now
+*Test*:  `$MAMBA_LOCAL` direvtory is defined now eg. `echo $MAMBA_LOCAL`
 
 # setup mamba base env.
 
