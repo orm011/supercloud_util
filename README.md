@@ -37,16 +37,17 @@ This command saves $MAMBA_LOCAL to $MAMBA_GLOBAL (in the shared filesystem)
 
   ```LLsub  ~/supercloud_util/test.bash -s 1 -q xeon-p8```
   
-The log output file should be at: 
-`~/test.bash-<some job number>`
+The log output file should be at `~/test.bash-<some job number>`
 
 The last line in this file should be `SUCCESS`
 
 * Interactive worker:
 Request an interactive worker:
-```LLsub -i full -q xeon-p8
-```
+
+```LLsub -i full -q xeon-p8```
+
 then upon loggin in to worker node:
+
 ```bash ~/supercloud_util/test.bash``` 
 
 SUCCESS should be printed, as before.
