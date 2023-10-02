@@ -110,6 +110,8 @@ function setup_worker_mamba() {
     fi
     . $MAMBA_LOCAL/etc/profile.d/conda.sh
     . $MAMBA_LOCAL/etc/profile.d/mamba.sh
+
+    mamba activate $ENV
 }
 
 
