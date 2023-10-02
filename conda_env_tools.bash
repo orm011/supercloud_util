@@ -54,7 +54,6 @@ function sync_conda_login_to_global() {
     mkdir -p $MAMBA_GLOBAL/envs
 
     echo 'backing up base env...'
-    sync_dir_to_tar
     tar -cf $MAMBA_GLOBAL/base.tar -C $MAMBA_LOCAL/ --exclude=envs/* --exclude=pkgs/* .
     echo 'done backing up base'
 
