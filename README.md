@@ -27,23 +27,53 @@ Log out, and log in back into the *same* login node (try a few times if needed)
 
 # saving mamba base env
 
-Run ```sync_conda_login_to_global```. This may take a couple of seconds.
+```sync_conda_login_to_global```
+
+This may take a couple of seconds.
 This command saves $MAMBA_LOCAL to $MAMBA_GLOBAL (in the shared filesystem)
 
-# tests:
-* Batch worker: `LLsub  ~/supercloud_util/test.bash -s 1 -q xeon-p8`
-check the log output file (after job is done, can check `LLstat` is empty)
-`test.bash-<some job number>`
+# testing:
+* Batch worker. First submit a job using LLsub. This will test that the environment setup works also in worker nodes.
 
-The last line should be `SUCCESS`
-This tests that the environment setup works also in worker nodes.
+  ```LLsub  ~/supercloud_util/test.bash -s 1 -q xeon-p8```
+  
+The log output file should be at: 
+`~/test.bash-<some job number>`
+
+The last line in this file should be `SUCCESS`
 
 * Interactive worker:
-`LLsub -i full -q xeon-p8`
-run `bash ~/supercloud_util/test.bash` from the command line.
-SUCCESS should be printed
+Request an interactive worker:
+```LLsub -i full -q xeon-p8
+```
+then upon loggin in to worker node:
+```bash ~/supercloud_util/test.bash``` 
 
-# Setting up new mamba environments of your own
+SUCCESS should be printed, as before.
+
+# Setting up project env for open_flamingo:
+A working open flamingo env tarball is available at askem_shared
+On a login node:
+
+```cp ~/askem_shared/envs/open_flamingo.tar $MAMBA_GLOBAL/envs/```
+then run
+```sync_conda_login_to_local```
+
+now you should be able to run
+```mamba activate open_flamingo```
+on the login node.
+
+* test: 
+```LLsub  ~/supercloud_util/test.bash -s 1 -q xeon-p8 -- open_flamingo```
+should produce success. If this doesnt work, lets chat.
+
+# Appendix
+
+## Setting up project env for seesaw:
+Same as for open_flamingo but with 
+`~/fastai_shared/seesaw/envs/seesaw.tar `
+
+## Setting up new mamba environments of your own 
 In login nodes you can create your own app env
 `mamba create -n myenv python=3.11` etc..
 
@@ -52,21 +82,7 @@ then `sync_conda_login_to_global` will back it up so its usable in worker nodes.
 You can test this similar to the base with with extra argument:
 `LLsub  ~/supercloud_util/test.bash -s 1 -q xeon-p8 -- myenv`
 
-# Setting up project env for open_flamingo:
-A working open flamingo env tarball is available at askem_shared
-On a login node:
-
-`cp ~/askem_shared/envs/open_flamingo.tar $MAMBA_GLOBAL/envs/`
-then run
-`sync_conda_login_to_local`
-
-now you should be able to run
-`mamba activate open_flamingo` on the login node.
-
-`LLsub  ~/supercloud_util/test.bash -s 1 -q xeon-p8 -- open_flamingo` should produce success.
-If this doesnt work, lets chat.
-
-# modifying environments:
+## Modifying existing envs.
 You can install new packages on login nodes 
 `mamba activate <env>`
 `mamba install <my pkg>`
