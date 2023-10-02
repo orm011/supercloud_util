@@ -1,6 +1,5 @@
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
-source $HOME/supercloud_util/sync_tools.bash
+UTILREPO="$HOME/supercloud_util/"
+source $UTILREPO/conda_env_tools.bash
 
 export TMPDIR=/state/partition1/user/$USER/tmpdir/
 mkdir -p $TMPDIR
@@ -51,12 +50,5 @@ if [[ $- == *i* ]]; then
 
     export LP_ENABLE_SHLVL=0  # mark seems to cause issues with wrapping lines
     source ~/liquidprompt/liquidprompt
-
-    if [[ `hostname` != login* ]]; then
-        if [ -z "${TMUX}" ]; then
-            sync_conda_global_to_worker
-        fi
-    fi
-
 fi
 
