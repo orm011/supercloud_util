@@ -77,14 +77,14 @@ function sync_conda_login_to_global() {
 
 function sync_conda_global_to_login() {
     echo 'restoring login envs from global storage'
-    if [[ `hostname` != login-4 ]]; then # only do from login-4, otherwise --delete flag would erase
-    	echo 'must run in login-4'
+    if [[ `hostname` != login-* ]]; then
+    	echo 'must run in login-'
 	    return 1
     fi
 
     # mambaglobal must exist
     if [[ ! -d $MAMBA_GLOBAL ]]; then
-        echo 'mamba local does not exist'
+        echo 'mamba global does not exist'
         return 1
     fi
 
