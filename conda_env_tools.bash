@@ -4,6 +4,16 @@ DIR="${BASH_SOURCE%/*}"
 if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
 source $DIR/sync_tools.bash
 
+
+# in login nodes, if TMPDIR is not set, set it
+#  as /tmp/ runs out of space with pip
+if [[ `hostname` = login*  ]];then
+    if [[ -z $TMPDIR ]]; then
+        export TMPDIR=/state/partition1/user/$USER/tmpdir/
+        mkdir -p $TMPDIR
+    fi
+fi
+
 export MAMBA_GLOBAL=/home/gridsan/$USER/miniforge_tars # global storage. used for communication.
 export MAMBA_LOCAL=/state/partition1/user/$USER/miniforge # fast storage, used for running mamba.
 export PYTHONNOUSERSITE=1 # dont use packages in .local, only what you install in conda.
