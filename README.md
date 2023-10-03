@@ -59,6 +59,7 @@ On a login node:
 ```
 mkdir repos; cd repos; git clone https://github.com/orm011/open_flamingo.git
 cd open_flamingo
+git checkout supercloud
 mamba create -n open_flamingo
 mamba env update -n open_flamingo -f ./environment.yml  # will install deps
 ```
